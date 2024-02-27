@@ -1,11 +1,20 @@
+#[macro_use]
+extern crate maplit;
+
 use std::io;
+
+use tokenizer::TokenType;
 
 use crate::parser::Parser;
 mod models;
 mod parser;
 mod tokenizer;
 fn main() {
-    let mut parser = Parser::new("\"hola\"".to_string());
+    let spec = hashmap![
+        r"^\d+".to_owned() => TokenType::Number,
+        r#""([^"]*)"|'([^']*)'"# .to_owned()=> TokenType::String,
+    ];
+    let mut parser = Parser::new(spec, "\"hola\"".to_string());
     let result = parser.parse();
     match result {
         Ok(parsed) => {

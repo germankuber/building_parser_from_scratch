@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -15,13 +17,15 @@ pub struct TokenValue {
 pub struct Tokenizer {
     to_parse: String,
     cursor: usize,
+    spec: HashMap<String, TokenType>,
 }
 
 impl Tokenizer {
-    pub fn new(to_parse: String) -> Tokenizer {
+    pub fn new(spec: HashMap<String, TokenType>, to_parse: String) -> Tokenizer {
         Tokenizer {
             to_parse,
             cursor: 0,
+            spec,
         }
     }
     fn has_more_tokens(&self) -> bool {
@@ -32,21 +36,33 @@ impl Tokenizer {
             return None;
         }
         let string_data = self.to_parse[self.cursor..].to_string();
-        if let Some(matched) = Regex::new(r"^\d+").unwrap().find(&string_data) {
-            self.cursor += matched.as_str().len();
+        if let Some(token) = self.search_token(&string_data) {
+            self.cursor += token.0.len();
             return Some(TokenValue {
-                token_type: TokenType::Number,
-                value: ParsedValue::Number(matched.as_str().parse::<u128>().unwrap()),
-            });
-        }
-        if let Some(matched) = Regex::new(r#""([^"]*)""#).unwrap().find(&string_data) {
-            let value_data = matched.as_str();
-            self.cursor += value_data.len();
-            return Some(TokenValue {
-                token_type: TokenType::String,
-                value: ParsedValue::String(value_data.to_string()),
+                token_type: token.1,
+                value: self.parse(&token.0),
             });
         }
         None
+    }
+    fn search_token(&self, string_data: &str) -> Option<(String, TokenType)> {
+        for (key, value) in self.spec.iter() {
+            if let Some(token) = self.match_token(key, &string_data) {
+                return Some((token, value.clone()));
+            }
+        }
+        None
+    }
+    fn match_token(&self, regex: &str, data_to_parse: &str) -> Option<String> {
+        if let Some(matched) = Regex::new(regex).unwrap().find(data_to_parse) {
+            return Some(matched.as_str().to_string());
+        }
+        None
+    }
+    fn parse(&mut self, value: &str) -> ParsedValue {
+        if let Ok(parsed) = value.parse::<u128>() {
+            return ParsedValue::Number(parsed);
+        }
+        ParsedValue::String(value.to_string())
     }
 }

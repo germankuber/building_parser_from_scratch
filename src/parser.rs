@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     models::{DomainError, Parsed, ParsedType, ParsedValue, Program},
     tokenizer::{TokenType, TokenValue, Tokenizer},
@@ -9,9 +11,9 @@ pub struct Parser {
     look_ahead: Option<TokenValue>,
 }
 impl Parser {
-    pub fn new(to_parse: String) -> Parser {
+    pub fn new(spec: HashMap<String, TokenType>, to_parse: String) -> Parser {
         Parser {
-            tokenizer: Tokenizer::new(to_parse.clone()),
+            tokenizer: Tokenizer::new(spec, to_parse.clone()),
             to_parse,
             look_ahead: None,
         }
