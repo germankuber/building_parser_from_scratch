@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::models::ParsedValue;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TokenType {
+    Null,
     Number,
     String,
 }
@@ -38,6 +39,9 @@ impl Tokenizer {
         let string_data = self.to_parse[self.cursor..].to_string();
         if let Some(token) = self.search_token(&string_data) {
             self.cursor += token.0.len();
+            if token.1 == TokenType::Null {
+                return self.get_next_token();
+            }
             return Some(TokenValue {
                 token_type: token.1,
                 value: self.parse(&token.0),

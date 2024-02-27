@@ -7,14 +7,12 @@ use crate::{
 
 pub struct Parser {
     tokenizer: Tokenizer,
-    to_parse: String,
     look_ahead: Option<TokenValue>,
 }
 impl Parser {
     pub fn new(spec: HashMap<String, TokenType>, to_parse: String) -> Parser {
         Parser {
             tokenizer: Tokenizer::new(spec, to_parse.clone()),
-            to_parse,
             look_ahead: None,
         }
     }
@@ -31,6 +29,7 @@ impl Parser {
         match self.look_ahead.as_ref().unwrap().token_type {
             TokenType::Number => self.numeric_literal(),
             TokenType::String => self.string_literal(),
+            TokenType::Null => todo!(),
         }
     }
     // NumericLiteral

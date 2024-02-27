@@ -11,10 +11,11 @@ mod parser;
 mod tokenizer;
 fn main() {
     let spec = hashmap![
+        r"^\s+".to_owned() => TokenType::Null,
         r"^\d+".to_owned() => TokenType::Number,
         r#""([^"]*)"|'([^']*)'"# .to_owned()=> TokenType::String,
     ];
-    let mut parser = Parser::new(spec, "\"hola\"".to_string());
+    let mut parser = Parser::new(spec, "   54    ".to_string());
     let result = parser.parse();
     match result {
         Ok(parsed) => {
