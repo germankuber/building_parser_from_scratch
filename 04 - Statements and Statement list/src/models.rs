@@ -1,6 +1,6 @@
 use std::num::ParseIntError;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DomainError {
@@ -9,14 +9,29 @@ pub enum DomainError {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ParsedType {
     NumericLiteral,
+    ExpressionStatement,
     StringLiteral,
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub enum ParsedValue {
     String(String),
     Number(u128),
 }
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub enum ParsedValueExpression {
+    ExpressionStatement(Box<Parsed>),
+}
 
+impl Serialize for ParsedValueExpression {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ParsedValueExpression::ExpressionStatement(parsed) => parsed.serialize(serializer),
+        }
+    }
+}
 impl ParsedValue {
     pub fn get_number(&self) -> u128 {
         match self {
@@ -31,16 +46,51 @@ impl ParsedValue {
         }
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Parsed {
+    value: ParsedValue,
+
     #[serde(rename = "type")]
     parsed_type: ParsedType,
-    value: ParsedValue,
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ParsedExpression {
+    expression: ParsedValueExpression,
+
+    #[serde(rename = "type")]
+    parsed_type: ParsedType,
 }
 
+impl ParsedExpression {
+    pub fn new(expression: ParsedValueExpression) -> ParsedExpression {
+        ParsedExpression {
+            parsed_type: ParsedType::ExpressionStatement,
+            expression,
+        }
+    }
+}
 impl Parsed {
     pub fn new(parsed_type: ParsedType, value: ParsedValue) -> Parsed {
         Parsed { parsed_type, value }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub enum ParsedValues {
+    ParsedValue(Parsed),
+    #[serde(rename = "expression")]
+    ParsedExpression(ParsedExpression),
+}
+// Implementing custom Serialize for ParsedValues
+impl Serialize for ParsedValues {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ParsedValues::ParsedValue(parsed) => parsed.serialize(serializer),
+            ParsedValues::ParsedExpression(parsed) => parsed.serialize(serializer),
+        }
     }
 }
 
@@ -52,13 +102,14 @@ impl From<ParseIntError> for DomainError {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 
 pub struct Program {
+    body: Vec<ParsedValues>,
+
     #[serde(rename = "type")]
     program_type: String,
-    body: Parsed,
 }
 
 impl Program {
-    pub fn new(body: Parsed) -> Program {
+    pub fn new(body: Vec<ParsedValues>) -> Program {
         Program {
             program_type: "Program".to_owned(),
             body,

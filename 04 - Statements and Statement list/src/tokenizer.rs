@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use indexmap::IndexMap;
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use crate::models::ParsedValue;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TokenType {
     Null,
+    SemiColon,
     Number,
     String,
 }
@@ -18,11 +20,11 @@ pub struct TokenValue {
 pub struct Tokenizer {
     to_parse: String,
     cursor: usize,
-    spec: HashMap<String, TokenType>,
+    spec: IndexMap<String, TokenType>,
 }
 
 impl Tokenizer {
-    pub fn new(spec: HashMap<String, TokenType>, to_parse: String) -> Tokenizer {
+    pub fn new(spec: IndexMap<String, TokenType>, to_parse: String) -> Tokenizer {
         Tokenizer {
             to_parse,
             cursor: 0,
